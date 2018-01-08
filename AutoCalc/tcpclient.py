@@ -5,6 +5,7 @@ import time
 import struct
 import socket
 
+
 class Packer:
 
     @staticmethod
@@ -17,13 +18,26 @@ class Packer:
         fmt = "I"
         return struct.unpack(fmt, packed)[0]
 
+
 def make_timestamp():
     timestamp = datetime.datetime.now().timestamp()
     return int(timestamp)
 
+
+def get_client_keys():
+    pubkey = rsa.PublicKey(7157919685780998040030268198690435899059491873181568440366064487608153356073537591530515598465502649272062627915514689661196740137864362592337214857205123,
+                           65537)
+    privkey = rsa.PrivateKey(7157919685780998040030268198690435899059491873181568440366064487608153356073537591530515598465502649272062627915514689661196740137864362592337214857205123,
+                             65537,
+                             2953841919861255351825970115104182963670353505808863977138108458845575894458374213828505117426236570451870346927080695776866504949047424394402686371008553,
+                             4432995129140126532139099625504781507619770933889522645428471238296144681878392319,
+                             1614691529600085178779141836636653810897261074378621408543337333988360317)
+    return pubkey, privkey
+
+
 class RSAManager:
     def __init__(self):
-        (self.pubkey, self.privkey) = rsa.newkeys(512)
+        (self.pubkey, self.privkey) = get_client_keys()
 
     def receive_message(self,encrypted_message):
         crypto = rsa.decrypt(encrypted_message, self.privkey)
@@ -42,6 +56,7 @@ class RSAManager:
         pubkey = rsa.PublicKey(int(temp[0]), int(temp[1]))
         return pubkey
 
+
 def make_socket():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect(("localhost",7777))
@@ -49,21 +64,18 @@ def make_socket():
 
 if __name__ == "__main__":
     receiver = RSAManager()
-    tmp = receiver.get_pub()
-    receiver_public_key = bytes(tmp, "UTF-8")
 
     connection = make_socket()
-    connection.send(receiver_public_key)
+
     tmp = connection.recv(1024)
     response = tmp.decode('UTF-8')
-    print("Phase 1 Response : {}".format(response))
-    tmp = response.split(',')
-    random = int(tmp[0])
-    sender_public = ",".join((tmp[1], tmp[2]))
-    sender_public_key = RSAManager.parse_pub(sender_public)
+    print("Timestamp : {}".format(response)) # Timestamp
 
-    enc_msg = rsa.sign(Packer.pack(make_timestamp()),receiver.privkey, 'SHA-1')
-    print("Phase 1 Request : {}".format(enc_msg))
+    tmp = int(response)
+    server_timestamp = Packer.pack(tmp + 1)
+
+    enc_msg = rsa.sign(server_timestamp, receiver.privkey, 'SHA-1')
+    print("Timestamp Sent : {}".format(enc_msg))
     connection.send(enc_msg)
 
     tmp = connection.recv(1024)

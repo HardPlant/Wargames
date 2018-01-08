@@ -4,6 +4,7 @@ import datetime
 import time
 import struct
 
+
 class Packer:
 
     @staticmethod
@@ -15,6 +16,7 @@ class Packer:
     def unpack(packed):
         fmt = "I"
         return struct.unpack(fmt, packed)[0]
+
 
 def make_timestamp():
     timestamp = datetime.datetime.now().timestamp()
@@ -32,9 +34,24 @@ def check_timestamp(before):
         return False
 
 
+def get_server_keys():
+    pubkey = rsa.PublicKey(9168571582432257053702075294818760020273587677271514650749610727046406386676190898163647513461476198234761835988352906600823933181728494997312924815612083,
+                           65537)
+    privkey = rsa.PrivateKey(9168571582432257053702075294818760020273587677271514650749610727046406386676190898163647513461476198234761835988352906600823933181728494997312924815612083,
+                             65537,
+                             455931379024775710484383834869071500161307692452017429036925421661721445816432318260083938361199528408421439141505851343160543410033685094774247193093649,
+                             6046695701246579417924837985200791782205481995975620729753057861853235346813559499,
+                             1516294524386612593732737817815743270405285273553439697256928195279199417)
+    return pubkey, privkey
+
+def get_client_pubkey():
+    pubkey = rsa.PublicKey(7157919685780998040030268198690435899059491873181568440366064487608153356073537591530515598465502649272062627915514689661196740137864362592337214857205123,
+                           65537)
+    return pubkey
+
 class RSAManager:
     def __init__(self):
-        (self.pubkey, self.privkey) = rsa.newkeys(512)
+        (self.pubkey, self.privkey) = get_server_keys()
 
     def receive_message(self,encrypted_message):
         crypto = rsa.decrypt(encrypted_message, self.privkey)
@@ -56,28 +73,28 @@ class RSAManager:
 class TCPHandler(socketserver.BaseRequestHandler):
     def handle(self):
         sender = RSAManager()
-        temp = self.request.recv(1024).strip()
-        recv = temp.decode('UTF-8')
-        print("Phase 1: {}".format(recv))
-        receiver_pubkey = RSAManager.parse_pub(recv)
+        client_pubkey = get_client_pubkey()
 
         random = make_timestamp()
-        response = "{},{}".format(str(random),sender.get_pub())
-        print("Phase 1 Response: {}".format(response))
+        response = "{}".format(str(random))
+        print("Phase 1: Timestamp {}".format(response))
         self.request.sendall(bytes(response,'UTF-8'))
 
         tmp = self.request.recv(1024).strip()
-        print("Phase 2 : {}".format(tmp))
-        recv = rsa.verify(tmp,receiver_pubkey)
-        recv = Packer.unpack(recv)
+        print("Phase 2 : Recv {}".format(tmp))
 
-        if(check_timestamp(recv)):
+        expected = Packer.pack(random+1)
+        is_true = rsa.verify(expected, tmp, client_pubkey)
+
+        if(is_true):
             print("Phase 2 Response: Correct")
-            self.request.sendall("Timestamp correct! flag{RSA_Authe}\n")
+            response = "Timestamp correct! flag{RSA_Authe}\n"
+
         else:
             print("Phase 2 Response: Failed")
-            self.request.sendall("Nope!")
+            response = "Nope!"
 
+        self.request.sendall(bytes(response,'UTF-8'))
 
 if __name__ == "__main__":
     HOST, PORT = "", 7777
