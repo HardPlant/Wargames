@@ -1,11 +1,13 @@
 <?php
 $mysql_hostname = "localhost";
-$mysql_user = "python";
-$mysql_password = "python";
+$mysql_user = "root";
+$mysql_password = "is119";
 $mysql_database = "wordpress";
 
-$bd = mysql_connect($mysql_hostname, $mysql_user, $mysql_password) or die("db connect error");
-mysql_select_db($mysql_database, $bd) or die("db connect error")
+$conn = mysqli_connect($mysql_hostname, $mysql_user, $mysql_password,$mysql_database) or die("db connect error");
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 436481396fb0c62a74a44542af15a6cd6f7290cd
 ?>
