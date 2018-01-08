@@ -20,7 +20,7 @@ def make_timestamp():
 
 
 def check_timestamp(before):
-    delta = 10
+    delta = 2
     after = int(datetime.datetime.now().timestamp())
     print("before : {} after : {}".format(before, after))
 
@@ -32,19 +32,22 @@ def check_timestamp(before):
 
 class TCPHandler(socketserver.BaseRequestHandler):
     def handle(self):
+        '''
         random = make_timestamp()
         response = Packer.pack(random)
+        '''
+        response = bytes("Give me Python timestamp, please?", "UTF-8")
         self.request.sendall(response)
 
         tmp = self.request.recv(1024).strip()
         recv = Packer.unpack(tmp)
 
         if(check_timestamp(recv)):
-            print("Phase 2 Response: Correct")
-            response = "Timestamp correct! flag{s0cket!}\n"
+            print("Response: Correct")
+            response = "Timestamp correct! flag{Tim3st@mpWi11NeedS00n}\n"
 
         else:
-            print("Phase 2 Response: Failed")
+            print("Response: Failed")
             response = "Nope!\n"
 
         self.request.sendall(bytes(response,'UTF-8'))

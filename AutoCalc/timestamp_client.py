@@ -31,14 +31,14 @@ if __name__ == "__main__":
     connection = make_socket()
 
     tmp = connection.recv(1024)
-    response = tmp.decode('UTF-8')
+    response = tmp
     print("Server Says: {}".format(response))
-
+    time.sleep(10)
     timestamp = make_timestamp()
     request = Packer.pack(timestamp)
     print("I Says: {}".format(request))
     connection.send(request)
 
     tmp = connection.recv(1024)
-    response = tmp.decode('UTF-8')
+    response = tmp
     print("Server Says: {}".format(response))
